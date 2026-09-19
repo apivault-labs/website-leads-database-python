@@ -18,7 +18,7 @@ class WebsiteLeadsDatabaseClient:
     """Run the hosted Actor and download its Dataset results."""
 
     def __init__(self, api_token: str | None = None, timeout: int = 600,
-                 poll_interval: float = 3.0, base_url: str = APIFY_API_BASE):
+                 poll_interval: float = 3.0):
         token = api_token or os.environ.get("APIFY_API_TOKEN")
         if not token:
             raise AuthenticationError(
@@ -27,7 +27,7 @@ class WebsiteLeadsDatabaseClient:
             )
         self.timeout = int(timeout)
         self.poll_interval = float(poll_interval)
-        self.base_url = base_url.rstrip("/")
+        self.base_url = APIFY_API_BASE
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {token}",
