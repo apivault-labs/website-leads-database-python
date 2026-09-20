@@ -70,6 +70,8 @@ Pay per delivered result through Apify, starting around **$8/1,000 results** on 
 
 ## Examples
 
+- [`guides/shopify-leads-to-crm.md`](guides/shopify-leads-to-crm.md) — count, sample, qualify and continue a Shopify lead segment
+
 - `examples/count_segment.py` — inspect audience size before export
 - `examples/sample_50.py` — review a safe 50-row sample
 - `examples/export_contacts.py` — save Shopify contacts to CSV
