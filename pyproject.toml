@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "website-leads-database"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python SDK for Shopify & Ecommerce Store Finder on Apify. Find ecommerce and business websites by public platform, country, contact and firmographic filters through the hosted Apify Actor."
 readme = "README.md"
 license = { text = "MIT" }
