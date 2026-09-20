@@ -53,6 +53,34 @@ class WebsiteLeadsDatabaseClient:
             raise ActorRunError("Actor completed but returned no Dataset rows")
         return rows[0]
 
+    def count(self, actor_input: Mapping[str, Any], *, actor_timeout_secs: int = 300) -> dict[str, Any]:
+        """Count a public audience segment without requesting paid lead rows."""
+        payload = dict(actor_input)
+        payload.update({"workflow": "count", "countOnly": True})
+        run = self._run(payload, actor_timeout_secs)
+        store_id = run.get("defaultKeyValueStoreId")
+        if not store_id:
+            raise ActorRunError("Successful count did not expose a result store")
+        summary = self._record(store_id, "COUNT_SUMMARY")
+        if not isinstance(summary, dict):
+            raise ActorRunError("COUNT_SUMMARY was missing or invalid")
+        return summary
+
+    def run_page(self, actor_input: Mapping[str, Any], *, actor_timeout_secs: int = 300) -> dict[str, Any]:
+        """Export one page and return rows plus the Actor's copy-ready continuation."""
+        payload = dict(actor_input)
+        payload.update({"workflow": "export", "countOnly": False})
+        run = self._run(payload, actor_timeout_secs)
+        dataset_id = run.get("defaultDatasetId")
+        store_id = run.get("defaultKeyValueStoreId")
+        if not dataset_id or not store_id:
+            raise ActorRunError("Successful export did not expose its result stores")
+        continuation = self._record(store_id, "EXPORT_CONTINUATION", required=False)
+        return {
+            "rows": self._dataset(dataset_id),
+            "continuation": continuation if isinstance(continuation, dict) else None,
+        }
+
     @staticmethod
     def estimate_cost(result_count: int, price_per_1000: float = 8.0) -> float:
         """Estimate result charges; actual tier pricing and platform usage may vary."""
@@ -76,6 +104,9 @@ class WebsiteLeadsDatabaseClient:
         if not run_id:
             raise ActorRunError("Apify response did not contain a run ID")
         return run_id
+
+    def _run(self, payload: dict[str, Any], timeout_secs: int) -> dict[str, Any]:
+        return self._wait(self._start(payload, timeout_secs))
 
     def _wait(self, run_id: str) -> dict[str, Any]:
         deadline = time.monotonic() + self.timeout
@@ -110,3 +141,19 @@ class WebsiteLeadsDatabaseClient:
         if not isinstance(data, list):
             raise ActorRunError("Unexpected Dataset response type")
         return data
+
+    def _record(self, store_id: str, key: str, *, required: bool = True) -> Any:
+        try:
+            response = self.session.get(
+                f"{self.base_url}/key-value-stores/{store_id}/records/{key}", timeout=30,
+            )
+        except requests.RequestException as exc:
+            raise WebsiteLeadsDatabaseError(f"Could not download {key}: {exc}") from exc
+        if response.status_code == 404 and not required:
+            return None
+        if response.status_code >= 400:
+            raise ActorRunError(f"{key} fetch failed with HTTP {response.status_code}: {response.text[:300]}")
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise ActorRunError(f"{key} response was not valid JSON") from exc
