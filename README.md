@@ -30,7 +30,9 @@ client = WebsiteLeadsDatabaseClient(api_token="apify_api_xxxxxx")
 rows = client.run({'platforms': ['shopify_sites', 'woocommerce_sites'],
  'country': ['US'],
  'hasEmail': True,
- 'maxItems': 100})
+ 'dedupeByDomain': True,
+ 'outputPreset': 'contacts',
+ 'maxItems': 50})
 print(rows[0] if rows else "No results")
 ```
 
@@ -40,6 +42,8 @@ You can set `APIFY_API_TOKEN` instead of passing the token in code.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
+| `workflow` | `string` | `auto` | Choose `count` for audience size or `export` for rows. The SDK helpers set this automatically. |
+| `outputPreset` | `string` | `custom` | Use `compact`, `contacts`, `sales`, `traffic`, `full` or exact custom columns. |
 | `platforms` | `array` | `["all"]` | Platform datasets to search, such as Shopify, WooCommerce, WordPress, Wix, Magento or all platforms. |
 | `columns` | `array` | `[]` | Exact public output-column names. Leave empty to return all available columns. |
 | `sortBy` | `string` | `` | Optional public column used to order rows before applying the limit. |
@@ -52,6 +56,9 @@ You can set `APIFY_API_TOKEN` instead of passing the token in code.
 | `sortDesc` | `boolean` | `True` | Return highest sort values first. |
 | `dedupeByDomain` | `boolean` | `False` | Remove repeated root domains within the selected window. |
 | `countOnly` | `boolean` | `False` | Return match counts instead of exporting website rows. |
+| `onlyWithTrafficData` | `boolean` | `False` | Keep only rows with traffic data. |
+| `minMonthlyVisits` | `integer` |  | Optional minimum monthly visits for traffic-qualified exports. |
+| `maxMonthlyVisits` | `integer` |  | Optional maximum monthly visits for traffic-qualified exports. |
 | `maxItems` | `integer` | `1000` | Maximum returned rows across selected platforms. |
 | `offset` | `integer` | `0` | Rows to skip for stable pagination across runs. |
 
@@ -63,12 +70,19 @@ Pay per delivered result through Apify, starting around **$8/1,000 results** on 
 
 ## Examples
 
-- `examples/quickstart.py` — first run
-- `examples/bulk_analysis.py` — expand a target list
+- `examples/count_segment.py` — inspect audience size before export
+- `examples/sample_50.py` — review a safe 50-row sample
+- `examples/export_contacts.py` — save Shopify contacts to CSV
+- `examples/traffic_qualified_export.py` — prioritize stores by audience size
+- `examples/resume_next_page.py` — continue with the Actor-provided next-page input
+- `examples/quickstart.py` — minimal first run
 - `examples/export_csv.py` — save flat result fields
 - `examples/save_json.py` — preserve nested output
 - `examples/cost_estimate.py` — estimate result-event charges
 - `examples/environment_token.py` — keep credentials out of code
+
+Use `client.count(...)` before a large request. Use `client.run_page(...)` when you
+need the copy-ready continuation returned by the hosted Actor.
 
 ## Architecture and privacy
 
