@@ -60,9 +60,26 @@ You can set `APIFY_API_TOKEN` instead of passing the token in code.
 | `minMonthlyVisits` | `integer` |  | Optional minimum monthly visits for traffic-qualified exports. |
 | `maxMonthlyVisits` | `integer` |  | Optional maximum monthly visits for traffic-qualified exports. |
 | `maxItems` | `integer` | `1000` | Maximum returned rows across selected platforms. |
-| `offset` | `integer` | `0` | Rows to skip for stable pagination across runs. |
+| `offset` | `integer` | `0` | Compatibility offset. For the next page, copy the complete resumeInput from EXPORT_CONTINUATION. |
 
 The complete, versioned schema is also available on the [Actor page](https://apify.com/apivault_labs/website-leads-database).
+
+## Continue an export
+
+Use run_page to obtain the previous run's continuation, then send its complete resumeInput to the next run_page call.
+
+```python
+page = client.run_page({
+    "platforms": ["shopify_sites"],
+    "hasEmail": True,
+    "maxItems": 50,
+})
+continuation = page.get("continuation") or {}
+if continuation.get("hasMore") and continuation.get("resumeInput"):
+    next_page = client.run_page(continuation["resumeInput"])
+```
+
+Keep filters, dataSource, sourceSession and exportCursor together. You can edit maxItems inside resumeInput to choose the next page size. An offset alone uses the currently ready copy if this run has no saved session, so pages may change when the index updates.
 
 ## Pricing
 
